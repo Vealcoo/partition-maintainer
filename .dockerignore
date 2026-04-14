@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+# Local env files
+.env
+.env.local
+
+# OS / IDE files
+.DS_Store
+.idea
+.vscode
+
+# Docs and local notes not needed in runtime image
+README.md
+
+# Test files
+*_test.go

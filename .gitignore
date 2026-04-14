@@ -1,0 +1,21 @@
+.DS_Store
+
+# Local env files
+.env
+.env.local
+
+# Build outputs
+app_exec
+app_exec_just_ping
+partition-maintainer
+
+# Go test artifacts
+*.test
+*.out
+coverage.out
+
+# IDE files
+.idea/
+.vscode/
+
+loc_docker_build.sh

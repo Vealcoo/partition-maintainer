@@ -1,0 +1,10 @@
+FROM gcr.io/distroless/base-debian12
+
+ARG APP_BINARY=app_exec
+
+WORKDIR /app
+COPY ${APP_BINARY} /app/partition-maintainer
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/app/partition-maintainer"]
