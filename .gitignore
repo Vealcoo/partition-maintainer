@@ -7,7 +7,6 @@
 # Build outputs
 app_exec
 app_exec_just_ping
-partition-maintainer
 
 # Go test artifacts
 *.test
