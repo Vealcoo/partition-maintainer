@@ -16,5 +16,3 @@ coverage.out
 # IDE files
 .idea/
 .vscode/
-
-loc_docker_build.sh
