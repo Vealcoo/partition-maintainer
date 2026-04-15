@@ -23,11 +23,15 @@ type Config struct {
 	PartitionColumn string
 	Timezone        string
 
-	CreateAheadDays int
-	DropBeforeDays  int
+	PartitionSpanDays int
+	CreateAheadDays   int
+	DropBeforeDays    int
 
 	MaxCreatePartitionsPerRun int
 	MaxDropPartitionsPerRun   int
+	MaxRepairPartitionsPerRun int
+
+	AutoRepairForwardGaps bool
 
 	LockName           string
 	LockTimeoutSeconds int
@@ -68,6 +72,10 @@ func load(ctx context.Context, secretResolver func(context.Context, string) (str
 	if err != nil {
 		return Config{}, err
 	}
+	partitionSpanDays, err := envInt("PARTITION_SPAN_DAYS", 1)
+	if err != nil {
+		return Config{}, err
+	}
 	dropBeforeDays, err := envInt("DROP_BEFORE_DAYS", 90)
 	if err != nil {
 		return Config{}, err
@@ -80,7 +88,15 @@ func load(ctx context.Context, secretResolver func(context.Context, string) (str
 	if err != nil {
 		return Config{}, err
 	}
+	maxRepairPartitionsPerRun, err := envInt("MAX_REPAIR_PARTITIONS_PER_RUN", 30)
+	if err != nil {
+		return Config{}, err
+	}
 	lockTimeoutSeconds, err := envInt("LOCK_TIMEOUT_SECONDS", 10)
+	if err != nil {
+		return Config{}, err
+	}
+	autoRepairForwardGaps, err := envBool("AUTO_REPAIR_FORWARD_GAPS", false)
 	if err != nil {
 		return Config{}, err
 	}
@@ -99,14 +115,20 @@ func load(ctx context.Context, secretResolver func(context.Context, string) (str
 		TableName:              tableName,
 		PartitionColumn:        getEnv("PARTITION_COLUMN", "event_date"),
 		Timezone:               getEnv("TIMEZONE", "Asia/Taipei"),
+		PartitionSpanDays:      partitionSpanDays,
 		CreateAheadDays:        createAheadDays,
 		DropBeforeDays:         dropBeforeDays,
 		MaxCreatePartitionsPerRun: maxCreatePartitionsPerRun,
 		MaxDropPartitionsPerRun:   maxDropPartitionsPerRun,
+		MaxRepairPartitionsPerRun: maxRepairPartitionsPerRun,
+		AutoRepairForwardGaps:     autoRepairForwardGaps,
 		LockTimeoutSeconds:     lockTimeoutSeconds,
 		DryRun:                 dryRun,
 	}
 
+	if cfg.PartitionSpanDays < 1 {
+		return Config{}, fmt.Errorf("PARTITION_SPAN_DAYS must be >= 1")
+	}
 	if cfg.CreateAheadDays < 1 {
 		return Config{}, fmt.Errorf("CREATE_AHEAD_DAYS must be >= 1")
 	}
@@ -118,6 +140,9 @@ func load(ctx context.Context, secretResolver func(context.Context, string) (str
 	}
 	if cfg.MaxDropPartitionsPerRun < 1 {
 		return Config{}, fmt.Errorf("MAX_DROP_PARTITIONS_PER_RUN must be >= 1")
+	}
+	if cfg.MaxRepairPartitionsPerRun < 1 {
+		return Config{}, fmt.Errorf("MAX_REPAIR_PARTITIONS_PER_RUN must be >= 1")
 	}
 	if cfg.LockTimeoutSeconds < 0 {
 		return Config{}, fmt.Errorf("LOCK_TIMEOUT_SECONDS must be >= 0")

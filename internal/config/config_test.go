@@ -101,8 +101,11 @@ func TestLoadReadsDDLGuardrails(t *testing.T) {
 	t.Setenv("DB_NAME", "dbname")
 	t.Setenv("TABLE_NAME", "events")
 	t.Setenv("DB_PASSWORD", "plaintext")
+	t.Setenv("PARTITION_SPAN_DAYS", "7")
 	t.Setenv("MAX_CREATE_PARTITIONS_PER_RUN", "12")
 	t.Setenv("MAX_DROP_PARTITIONS_PER_RUN", "8")
+	t.Setenv("MAX_REPAIR_PARTITIONS_PER_RUN", "5")
+	t.Setenv("AUTO_REPAIR_FORWARD_GAPS", "true")
 
 	cfg, err := load(context.Background(), func(context.Context, string) (string, error) {
 		t.Fatal("secret resolver should not be called")
@@ -111,10 +114,53 @@ func TestLoadReadsDDLGuardrails(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
+	if cfg.PartitionSpanDays != 7 {
+		t.Fatalf("expected PartitionSpanDays=7, got %d", cfg.PartitionSpanDays)
+	}
 	if cfg.MaxCreatePartitionsPerRun != 12 {
 		t.Fatalf("expected MaxCreatePartitionsPerRun=12, got %d", cfg.MaxCreatePartitionsPerRun)
 	}
 	if cfg.MaxDropPartitionsPerRun != 8 {
 		t.Fatalf("expected MaxDropPartitionsPerRun=8, got %d", cfg.MaxDropPartitionsPerRun)
+	}
+	if cfg.MaxRepairPartitionsPerRun != 5 {
+		t.Fatalf("expected MaxRepairPartitionsPerRun=5, got %d", cfg.MaxRepairPartitionsPerRun)
+	}
+	if !cfg.AutoRepairForwardGaps {
+		t.Fatal("expected AutoRepairForwardGaps=true")
+	}
+}
+
+func TestLoadRejectsInvalidPartitionSpanDays(t *testing.T) {
+	t.Setenv("INSTANCE_CONNECTION_NAME", "project:region:instance")
+	t.Setenv("DB_USER", "user")
+	t.Setenv("DB_NAME", "dbname")
+	t.Setenv("TABLE_NAME", "events")
+	t.Setenv("DB_PASSWORD", "plaintext")
+	t.Setenv("PARTITION_SPAN_DAYS", "0")
+
+	_, err := load(context.Background(), func(context.Context, string) (string, error) {
+		t.Fatal("secret resolver should not be called")
+		return "", nil
+	})
+	if err == nil || !strings.Contains(err.Error(), "PARTITION_SPAN_DAYS must be >= 1") {
+		t.Fatalf("expected invalid partition span error, got %v", err)
+	}
+}
+
+func TestLoadRejectsInvalidRepairLimit(t *testing.T) {
+	t.Setenv("INSTANCE_CONNECTION_NAME", "project:region:instance")
+	t.Setenv("DB_USER", "user")
+	t.Setenv("DB_NAME", "dbname")
+	t.Setenv("TABLE_NAME", "events")
+	t.Setenv("DB_PASSWORD", "plaintext")
+	t.Setenv("MAX_REPAIR_PARTITIONS_PER_RUN", "0")
+
+	_, err := load(context.Background(), func(context.Context, string) (string, error) {
+		t.Fatal("secret resolver should not be called")
+		return "", nil
+	})
+	if err == nil || !strings.Contains(err.Error(), "MAX_REPAIR_PARTITIONS_PER_RUN must be >= 1") {
+		t.Fatalf("expected invalid repair limit error, got %v", err)
 	}
 }
