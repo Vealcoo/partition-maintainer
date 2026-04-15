@@ -64,11 +64,11 @@ func (m *Manager) Run(ctx context.Context, today time.Time) error {
 		return err
 	}
 	gap := analyzeForwardGap(partitions, today, m.cfg.PartitionSpanDays, m.cfg.CreateAheadDays)
+	if gap.UnsafeReason != "" {
+		return fmt.Errorf("table %s has an unsafe partition gap: %s", m.cfg.TableName, gap.UnsafeReason)
+	}
 	if len(gap.Missing) > 0 {
 		if !gap.Repairable {
-			if gap.UnsafeReason != "" {
-				return fmt.Errorf("table %s has an unsafe partition gap: %s", m.cfg.TableName, gap.UnsafeReason)
-			}
 			return fmt.Errorf("table %s has an unsafe partition gap before the active maintenance window", m.cfg.TableName)
 		}
 		if !m.cfg.AutoRepairForwardGaps {

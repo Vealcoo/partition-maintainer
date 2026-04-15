@@ -304,6 +304,26 @@ func TestAnalyzeForwardGapRejectsWindowBeforeEarliestPartition(t *testing.T) {
 	}
 }
 
+func TestAnalyzeForwardGapUnsafeReasonCanExistWithoutMissingPartitions(t *testing.T) {
+	loc, err := time.LoadLocation("Asia/Taipei")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	gap := analyzeForwardGap([]partitionDef{
+		{Name: "p20260501", Description: partitionBoundary("2026-05-02", loc), OrdinalPosition: 1},
+		{Name: "p20260502", Description: partitionBoundary("2026-05-03", loc), OrdinalPosition: 2},
+		{Name: "pmax", Description: nullString("MAXVALUE"), OrdinalPosition: 3},
+	}, time.Date(2026, 4, 15, 0, 0, 0, 0, loc), 1, 30)
+
+	if len(gap.Missing) != 0 {
+		t.Fatalf("expected no missing partitions, got %d", len(gap.Missing))
+	}
+	if gap.UnsafeReason == "" {
+		t.Fatal("expected unsafe reason to be populated")
+	}
+}
+
 func TestEnsureFuturePartitionsRejectsBackfillBeforeLatestExistingPartition(t *testing.T) {
 	loc, err := time.LoadLocation("Asia/Taipei")
 	if err != nil {

@@ -63,6 +63,7 @@ bucket 對齊不是看月份或星期，而是用 MySQL `TO_DAYS(date)` 做固�
 - `AUTO_REPAIR_FORWARD_GAPS=true`
 - 缺口只發生在「最後一個資料 partition」之後
 - 缺口位於目前維護視窗內
+- active window 不可早於最早既有資料 partition
 - 缺口數量不超過 `MAX_REPAIR_PARTITIONS_PER_RUN`
 
 修補方式：
@@ -138,9 +139,9 @@ bucket 對齊不是看月份或星期，而是用 MySQL `TO_DAYS(date)` 做固�
 - `DROP_BEFORE_DAYS=90`
 - `MAX_CREATE_PARTITIONS_PER_RUN=30`
 - `MAX_DROP_PARTITIONS_PER_RUN=30`
-- `MAX_REPAIR_PARTITIONS_PER_RUN=30`
-- `AUTO_REPAIR_FORWARD_GAPS=false`
-- `DRY_RUN=true`
+- `MAX_REPAIR_PARTITIONS_PER_RUN=50`
+- `AUTO_REPAIR_FORWARD_GAPS=true`
+- `DRY_RUN=false`
 
 這組設定的效果是：
 
@@ -148,8 +149,8 @@ bucket 對齊不是看月份或星期，而是用 MySQL `TO_DAYS(date)` 做固�
 - 以台北時區計算今天
 - 維護未來 30 天的 partitions
 - 保留最近 90 天資料
-- 尾端缺口預設不自動修，會直接 fail
-- 目前只做 dry-run，不會真正改表
+- 允許自動修補安全的尾端缺口
+- 目前會真的執行 DDL，不是 dry-run
 
 如果今天是 `2026-04-15`，則：
 
@@ -176,5 +177,6 @@ bucket 對齊不是看月份或星期，而是用 MySQL `TO_DAYS(date)` 做固�
 - 自動把普通 table 轉成 partition table
 - 自動重切已存在但規則不一致的 partitions
 - 自動修正歷史中間缺口
+- 自動回填比最後既有資料 partition 更早的缺口
 
 尾端缺口 repair 是有界自動化，不是全自動 schema repair。

@@ -65,6 +65,7 @@ docker build -t partition-maintainer:latest .
 - 執行前會檢查 partition expression 必須是 `TO_DAYS(PARTITION_COLUMN)`
 - 執行前會檢查 partition 連續性、命名與 `PARTITION_SPAN_DAYS` 邊界是否一致
 - 若尾端缺口只發生在最後一個資料 partition 與目前維護視窗之間，可用 `AUTO_REPAIR_FORWARD_GAPS=true` 自動補齊
+- 若 active window 早於最早既有資料 partition，或需要回填比最後既有資料 partition 更早的缺口，程式會直接拒絕執行
 - 單次最多建立 `MAX_CREATE_PARTITIONS_PER_RUN` 個 partition
 - 單次最多刪除 `MAX_DROP_PARTITIONS_PER_RUN` 個 partition
 - 單次最多修補 `MAX_REPAIR_PARTITIONS_PER_RUN` 個尾端缺口 partition
